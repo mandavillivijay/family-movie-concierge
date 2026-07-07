@@ -9,12 +9,8 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
-    ],
+    extends: [js.configs.recommended, tseslint.configs.recommended, reactRefresh.configs.vite],
+    plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: globals.browser,
     },
@@ -23,6 +19,12 @@ export default defineConfig([
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      // Only the two classic, correctness-oriented hooks rules. The rest of
+      // react-hooks v7's "recommended" set targets React Compiler readiness
+      // (e.g. set-state-in-effect flags the standard fetch-on-mount pattern),
+      // which doesn't fit this project's plain useEffect/useState data layer.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
 ])

@@ -1,9 +1,35 @@
+import { SessionProvider, useSession } from './state/SessionContext'
+import { SelectFamilyScreen } from './screens/SelectFamilyScreen'
+import { SelectMoodScreen } from './screens/SelectMoodScreen'
+import { SelectLanguageScreen } from './screens/SelectLanguageScreen'
+import { SelectRuntimeScreen } from './screens/SelectRuntimeScreen'
+import { RecommendationsScreen } from './screens/RecommendationsScreen'
+import { SpinnerScreen } from './screens/SpinnerScreen'
+
+function Wizard() {
+  const { state } = useSession()
+
+  switch (state.step) {
+    case 'family':
+      return <SelectFamilyScreen />
+    case 'mood':
+      return <SelectMoodScreen />
+    case 'language':
+      return <SelectLanguageScreen />
+    case 'runtime':
+      return <SelectRuntimeScreen />
+    case 'recommendations':
+      return <RecommendationsScreen />
+    case 'spinner':
+      return <SpinnerScreen />
+  }
+}
+
 function App() {
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-2 px-6 text-center">
-      <h1 className="text-2xl font-semibold text-slate-50">Family Movie Night Concierge</h1>
-      <p className="text-slate-400">Scaffold is up. Screens land in a later build phase.</p>
-    </main>
+    <SessionProvider>
+      <Wizard />
+    </SessionProvider>
   )
 }
 
