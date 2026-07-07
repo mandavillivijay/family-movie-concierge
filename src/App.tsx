@@ -5,6 +5,8 @@ import { SelectLanguageScreen } from './screens/SelectLanguageScreen'
 import { SelectRuntimeScreen } from './screens/SelectRuntimeScreen'
 import { RecommendationsScreen } from './screens/RecommendationsScreen'
 import { SpinnerScreen } from './screens/SpinnerScreen'
+import { FeedbackScreen } from './screens/FeedbackScreen'
+import { usePendingFeedback } from './hooks/usePendingFeedback'
 
 function Wizard() {
   const { state } = useSession()
@@ -25,10 +27,20 @@ function Wizard() {
   }
 }
 
+function AppShell() {
+  const { pending, loading, refresh } = usePendingFeedback()
+
+  if (loading) return null
+  if (pending.length > 0) {
+    return <FeedbackScreen key={pending[0].id} movieNight={pending[0]} onDone={refresh} />
+  }
+  return <Wizard />
+}
+
 function App() {
   return (
     <SessionProvider>
-      <Wizard />
+      <AppShell />
     </SessionProvider>
   )
 }
