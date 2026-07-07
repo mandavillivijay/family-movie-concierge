@@ -46,12 +46,12 @@ describe('runPipeline', () => {
     expect(result.relaxedSteps).not.toContain('age')
   })
 
-  it('relaxes runtime first, then mood, then language, in that order', () => {
+  it('relaxes runtime first, then language, then mood, in that order', () => {
     const catalog = [
       makeMovie({ id: 'te-comedy-long-1', language: 'te', moodTags: ['comedy'], runtimeMinutes: 170 }),
       makeMovie({ id: 'te-comedy-long-2', language: 'te', moodTags: ['comedy'], runtimeMinutes: 175 }),
+      makeMovie({ id: 'en-comedy-short', language: 'en', moodTags: ['comedy'], runtimeMinutes: 80 }),
       makeMovie({ id: 'te-thriller-short', language: 'te', moodTags: ['thriller'], runtimeMinutes: 80 }),
-      makeMovie({ id: 'en-thriller-short', language: 'en', moodTags: ['thriller'], runtimeMinutes: 80 }),
     ]
 
     const result = runPipeline(
@@ -64,11 +64,35 @@ describe('runPipeline', () => {
     )
 
     // Only 2 'te'+'comedy' movies exist and both are long, so runtime relaxes
-    // first (picking up the 2 long comedies), then mood relaxes to reach 3.
-    expect(result.relaxedSteps).toEqual(['runtime', 'mood'])
+    // first (picking up the 2 long comedies). That's still only 2, so
+    // language relaxes next, pulling in the English comedy for exactly 3 —
+    // mood is never abandoned, since it's the intent the user picked.
+    expect(result.relaxedSteps).toEqual(['runtime', 'language'])
     expect(result.top3.map((m) => m.id).sort()).toEqual(
-      ['te-comedy-long-1', 'te-comedy-long-2', 'te-thriller-short'].sort(),
+      ['te-comedy-long-1', 'te-comedy-long-2', 'en-comedy-short'].sort(),
     )
+  })
+
+  it('only abandons mood as a last resort, after language has already relaxed', () => {
+    const catalog = [
+      makeMovie({ id: 'te-comedy', language: 'te', moodTags: ['comedy'] }),
+      makeMovie({ id: 'en-comedy', language: 'en', moodTags: ['comedy'] }),
+      makeMovie({ id: 'te-thriller', language: 'te', moodTags: ['thriller'] }),
+    ]
+
+    const result = runPipeline(
+      baseInput({
+        catalog,
+        moodId: 'comedy',
+        languagePriority: 'te',
+        runtimeFilter: 'any',
+      }),
+    )
+
+    // Only 1 'te'+'comedy' movie exists; relaxing language reaches 2, still
+    // short of 3, so mood relaxes last, pulling in the thriller.
+    expect(result.relaxedSteps).toEqual(['language', 'mood'])
+    expect(result.top3.map((m) => m.id).sort()).toEqual(['te-comedy', 'en-comedy', 'te-thriller'].sort())
   })
 
   it('can return fewer than 3 movies if even full relaxation is not enough', () => {

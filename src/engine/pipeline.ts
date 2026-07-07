@@ -14,11 +14,15 @@ const TOP_N = 3
  * Filters + ranks the catalog down to exactly 3 movies where possible.
  * Order: platform -> age (both hard constraints, never relaxed) -> language
  * -> mood -> runtime, then preference ranking. If fewer than 3 candidates
- * survive, relaxes runtime, then mood, then language (in that order) until 3
- * are available or every relaxable filter has been dropped. With a very
- * small/restrictive catalog (e.g. few subscribed platforms or a very young
- * participant), fewer than 3 may still result — the pipeline returns
- * whatever it has rather than fabricating movies.
+ * survive, relaxes runtime, then language, then mood (in that order) until 3
+ * are available or every relaxable filter has been dropped. Language is
+ * relaxed before mood because mood is the intent the user explicitly picked
+ * (e.g. "Romance") — better to offer a Romance pick in another language than
+ * to abandon Romance and surface an unrelated kids' cartoon just because it
+ * happens to be in the requested language. With a very small/restrictive
+ * catalog (e.g. few subscribed platforms or a very young participant), fewer
+ * than 3 may still result — the pipeline returns whatever it has rather than
+ * fabricating movies.
  */
 export function runPipeline(input: RecommendationInput): PipelineResult {
   const relaxedSteps: PipelineResult['relaxedSteps'] = []
@@ -42,14 +46,14 @@ export function runPipeline(input: RecommendationInput): PipelineResult {
     relaxedSteps.push('runtime')
     candidates = applyRelaxableFilters()
   }
-  if (candidates.length < TOP_N && moodId !== SURPRISE_MOOD_ID) {
-    moodId = SURPRISE_MOOD_ID
-    relaxedSteps.push('mood')
-    candidates = applyRelaxableFilters()
-  }
   if (candidates.length < TOP_N && languagePriority !== 'any') {
     languagePriority = 'any'
     relaxedSteps.push('language')
+    candidates = applyRelaxableFilters()
+  }
+  if (candidates.length < TOP_N && moodId !== SURPRISE_MOOD_ID) {
+    moodId = SURPRISE_MOOD_ID
+    relaxedSteps.push('mood')
     candidates = applyRelaxableFilters()
   }
 
